@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { isData, type Data } from '../shared/types';
 import { createSessionToken, hashPassword, verifyPassword, verifySessionToken } from './auth';
 import * as config from './config';
+import { log } from './log';
 import { UserStore, type User } from './store';
 
 const COOKIE = 'workh_session';
@@ -156,8 +157,9 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
     }
     if (legacy) {
       fs.renameSync(o.legacyDataFile, `${o.legacyDataFile}.migrated`);
-      console.log(`WorkH: moved ${o.legacyDataFile} into the new account "${user.username}"`);
+      log.info(`moved ${o.legacyDataFile} into the new account "${user.username}"`);
     }
+    log.info(`account created: ${user.username}`);
     startSession(res, user);
     res.status(201).json({ username: user.username });
   });
@@ -173,9 +175,11 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
     const user = store.findByName(creds.username);
     const ok = await verifyPassword(creds.password, user?.passwordHash ?? (await dummyHash));
     if (!user || !ok) {
+      log.warn(`login failed: ${creds.username}`);
       res.status(401).json({ error: 'Wrong username or password' });
       return;
     }
+    log.info(`login: ${user.username}`);
     startSession(res, user);
     res.json({ username: user.username });
   });
@@ -208,7 +212,7 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
       return;
     }
     store.delete(user.id);
-    console.log(`WorkH: deleted account "${user.username}"`);
+    log.info(`account deleted: ${user.username}`);
     res.clearCookie(COOKIE, cookieOptions);
     res.status(204).end();
   });
@@ -223,7 +227,7 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
       const { data, rev } = store.readData((req as AuthedRequest).user.id);
       res.set('ETag', `"${rev}"`).json(data);
     } catch (err) {
-      console.error('Could not read data file:', err);
+      log.error('could not read data file', err);
       res.status(500).json({ error: 'Could not read data file' });
     }
   });
@@ -238,10 +242,30 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
       res.status(400).json({ error: 'Invalid data shape' });
       return;
     }
-    const result = store.writeData((req as AuthedRequest).user.id, req.body, ifMatch);
+    const { user } = req as AuthedRequest;
+    const before = store.readData(user.id).data;
+    const result = store.writeData(user.id, req.body, ifMatch);
     if (!result.ok) {
       res.status(412).set('ETag', `"${result.current.rev}"`).json(result.current.data);
       return;
+    }
+    const added = Object.keys(req.body.entries).filter((date) => !(date in before.entries));
+    if (added.length) log.info(`${user.username} added time for ${added.join(', ')}`);
+    const deleted = Object.keys(before.entries).filter((date) => !(date in req.body.entries));
+    if (deleted.length) log.info(`${user.username} deleted ${deleted.join(', ')}`);
+    const changed = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
+    for (const [date, entry] of Object.entries(req.body.entries)) {
+      if (date in before.entries && changed(before.entries[date], entry)) {
+        log.info(`${user.username} changed ${date} to ${JSON.stringify(entry)}`);
+      }
+    }
+    for (const [key, value] of Object.entries(req.body.settings)) {
+      if (changed(before.settings[key as keyof Data['settings']], value)) {
+        log.info(`${user.username} changed ${key} to ${JSON.stringify(value)}`);
+      }
+    }
+    if (changed(before.workloadPeriods, req.body.workloadPeriods)) {
+      log.info(`${user.username} changed working hours to ${JSON.stringify(req.body.workloadPeriods)}`);
     }
     res.set('ETag', `"${result.rev}"`).json({ ok: true });
   });

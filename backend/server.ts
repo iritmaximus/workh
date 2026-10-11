@@ -1,8 +1,9 @@
 import { createApp } from './app';
 import { DATA_DIR, PORT } from './config';
+import { log } from './log';
 
 const server = createApp().listen(PORT, () => {
-  console.log(`WorkH listening on http://localhost:${PORT} (data: ${DATA_DIR})`);
+  log.info(`WorkH listening on http://localhost:${PORT} (data: ${DATA_DIR})`);
 });
 
 // Exit promptly when Kubernetes / Docker stops the container.

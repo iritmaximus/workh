@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { defaultData, type Data } from '../shared/types';
+import { log } from './log';
 
 export interface User {
   id: string;
@@ -113,6 +114,7 @@ export class UserStore {
     const content = JSON.stringify(data, null, 2) + '\n';
     if (fs.existsSync(file)) fs.copyFileSync(file, `${file}.bak`);
     writeAtomic(file, content);
+    log.debug(`wrote ${file}`);
     return { ok: true, rev: revOf(content) };
   }
 }
