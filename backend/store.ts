@@ -114,7 +114,7 @@ export class UserStore {
     const content = JSON.stringify(data, null, 2) + '\n';
     if (fs.existsSync(file)) fs.copyFileSync(file, `${file}.bak`);
     writeAtomic(file, content);
-    log.debug(`wrote ${file}`);
+    log.debug('wrote data file', { file });
     return { ok: true, rev: revOf(content) };
   }
 }

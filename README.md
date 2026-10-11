@@ -31,7 +31,7 @@ and keep a running balance of extra/minus hours.
 | `DATA_DIR`          | `./data` | `users.json` + `users/<id>.json`                                                           |
 | `SESSION_SECRET`    | random   | Signs login cookies; without it everyone is logged out on restart. `npm run -s gen-secret` |
 | `REGISTRATION_CODE` | —        | If set, sign-up requires this invite code                                                  |
-| `LOG_LEVEL`         | `info`   | `debug`, `info`, `warn` or `error`; lines below this level are not logged                  |
+| `LOG_LEVEL`         | `info`   | `debug`, `info`, `warn` or `error`; lines below this level are not logged. Format: logfmt  |
 
 Everything else is fixed in `backend/config.ts`: at most 100 accounts, 30-day sessions.
 The app does no rate limiting of its own; that is left to the ingress (Traefik).

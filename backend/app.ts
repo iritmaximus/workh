@@ -157,9 +157,9 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
     }
     if (legacy) {
       fs.renameSync(o.legacyDataFile, `${o.legacyDataFile}.migrated`);
-      log.info(`moved ${o.legacyDataFile} into the new account "${user.username}"`);
+      log.info('legacy data moved into account', { user: user.username, file: o.legacyDataFile });
     }
-    log.info(`account created: ${user.username}`);
+    log.info('account created', { user: user.username });
     startSession(res, user);
     res.status(201).json({ username: user.username });
   });
@@ -175,11 +175,11 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
     const user = store.findByName(creds.username);
     const ok = await verifyPassword(creds.password, user?.passwordHash ?? (await dummyHash));
     if (!user || !ok) {
-      log.warn(`login failed: ${creds.username}`);
+      log.warn('login failed', { user: creds.username });
       res.status(401).json({ error: 'Wrong username or password' });
       return;
     }
-    log.info(`login: ${user.username}`);
+    log.info('login', { user: user.username });
     startSession(res, user);
     res.json({ username: user.username });
   });
@@ -212,7 +212,7 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
       return;
     }
     store.delete(user.id);
-    log.info(`account deleted: ${user.username}`);
+    log.info('account deleted', { user: user.username });
     res.clearCookie(COOKIE, cookieOptions);
     res.status(204).end();
   });
@@ -227,7 +227,7 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
       const { data, rev } = store.readData((req as AuthedRequest).user.id);
       res.set('ETag', `"${rev}"`).json(data);
     } catch (err) {
-      log.error('could not read data file', err);
+      log.error('could not read data file', { user: (req as AuthedRequest).user.username, error: err });
       res.status(500).json({ error: 'Could not read data file' });
     }
   });
@@ -250,22 +250,22 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
       return;
     }
     const added = Object.keys(req.body.entries).filter((date) => !(date in before.entries));
-    if (added.length) log.info(`${user.username} added time for ${added.join(', ')}`);
+    if (added.length) log.info('time added', { user: user.username, dates: added.join(',') });
     const deleted = Object.keys(before.entries).filter((date) => !(date in req.body.entries));
-    if (deleted.length) log.info(`${user.username} deleted ${deleted.join(', ')}`);
+    if (deleted.length) log.info('days deleted', { user: user.username, dates: deleted.join(',') });
     const changed = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
     for (const [date, entry] of Object.entries(req.body.entries)) {
       if (date in before.entries && changed(before.entries[date], entry)) {
-        log.info(`${user.username} changed ${date} to ${JSON.stringify(entry)}`);
+        log.info('day changed', { user: user.username, date, to: entry });
       }
     }
     for (const [key, value] of Object.entries(req.body.settings)) {
       if (changed(before.settings[key as keyof Data['settings']], value)) {
-        log.info(`${user.username} changed ${key} to ${JSON.stringify(value)}`);
+        log.info('setting changed', { user: user.username, setting: key, to: value });
       }
     }
     if (changed(before.workloadPeriods, req.body.workloadPeriods)) {
-      log.info(`${user.username} changed working hours to ${JSON.stringify(req.body.workloadPeriods)}`);
+      log.info('working hours changed', { user: user.username, to: req.body.workloadPeriods });
     }
     res.set('ETag', `"${result.rev}"`).json({ ok: true });
   });
