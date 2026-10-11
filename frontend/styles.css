@@ -97,6 +97,7 @@ button.link {
 }
 button.link.danger {
   color: var(--neg);
+  background: none;
 }
 input:focus-visible,
 button:focus-visible {
