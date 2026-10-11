@@ -46,6 +46,8 @@ export function DayRow({ date, entry, worked, target, isToday, onChange }: Props
           <button
             key={m.mode}
             type="button"
+            // Out of the tab order so Tab goes from one day's input straight to the next.
+            tabIndex={-1}
             className={m.mode === mode ? 'active' : ''}
             onClick={() => m.mode !== mode && onChange(emptyEntry(m.mode))}
           >

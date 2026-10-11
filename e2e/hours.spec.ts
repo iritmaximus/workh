@@ -87,6 +87,14 @@ test.describe('entering total hours', () => {
     await expect(dayInput(page, MONDAY)).toHaveValue('6:45');
     void user;
   });
+
+  test('Tab moves straight to the next day, skipping the mode buttons', async ({ page, user }) => {
+    await page.goto('/');
+    await dayInput(page, MONDAY).focus();
+    await page.keyboard.press('Tab');
+    await expect(dayInput(page, TUE)).toBeFocused();
+    void user;
+  });
 });
 
 test.describe('start–end ranges', () => {
