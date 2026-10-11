@@ -58,7 +58,7 @@ npm run lint           # oxlint
 npm run format:check   # oxfmt (npm run format to fix)
 npm run typecheck
 npm test               # unit + API integration tests
-npx playwright install chromium   # once
+npx playwright install firefox    # once
 npm run test:e2e       # builds, starts two test servers, runs Playwright
 ```
 

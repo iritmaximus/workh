@@ -20,7 +20,12 @@ export default defineConfig({
   },
   webServer: [server(3100, 'e2e/.data/main'), server(3101, 'e2e/.data/invite', 'REGISTRATION_CODE=let-me-in-please')],
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] }, grepInvert: /@mobile/ },
-    { name: 'mobile', use: { ...devices['Pixel 7'] }, grep: /@mobile/ },
+    { name: 'desktop', use: { ...devices['Desktop Firefox'] }, grepInvert: /@mobile/ },
+    {
+      // Firefox has no mobile emulation (isMobile), so this is a phone-sized touch screen.
+      name: 'mobile',
+      use: { ...devices['Desktop Firefox'], viewport: { width: 412, height: 915 }, hasTouch: true },
+      grep: /@mobile/,
+    },
   ],
 });
