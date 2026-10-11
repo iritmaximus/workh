@@ -1,0 +1,6 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 120,
+  "singleQuote": true,
+  "ignorePatterns": ["dist", "playwright-report", "test-results", "e2e/.data", "package-lock.json", "timetrials"]
+}

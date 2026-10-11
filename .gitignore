@@ -1,0 +1,12 @@
+node_modules
+dist
+data.json
+data.json.migrated
+data/
+data.json.bak
+*.tmp
+.env
+.env.*
+e2e/.data
+test-results
+playwright-report
