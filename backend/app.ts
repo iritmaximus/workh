@@ -180,7 +180,7 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
     }
     if (legacy) {
       fs.renameSync(o.legacyDataFile, `${o.legacyDataFile}.migrated`);
-      console.log(`workh: moved ${o.legacyDataFile} into the new account "${user.username}"`);
+      console.log(`WorkH: moved ${o.legacyDataFile} into the new account "${user.username}"`);
     }
     signupLimiter.hit(ip);
     startSession(res, user);
@@ -241,7 +241,7 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
       return;
     }
     store.delete(user.id);
-    console.log(`workh: deleted account "${user.username}"`);
+    console.log(`WorkH: deleted account "${user.username}"`);
     res.clearCookie(COOKIE, cookieOptions);
     res.status(204).end();
   });

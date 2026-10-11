@@ -1,4 +1,4 @@
-# workh — working hours tracker
+# WorkH — working hours tracker
 
 Log your daily hours, see how much you are over/under your weekly target,
 and keep a running balance of extra/minus hours.
