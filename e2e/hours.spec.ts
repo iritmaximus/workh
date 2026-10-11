@@ -35,6 +35,8 @@ test.describe('entering total hours', () => {
   for (const [typed, minutes] of [
     ['7.5', 450],
     ['7,5', 450],
+    ['7.30', 450],
+    ['7,30', 450],
     ['7:30', 450],
     ['7h30', 450],
     ['7h 30min', 450],

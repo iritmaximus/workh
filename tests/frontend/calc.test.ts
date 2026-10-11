@@ -35,7 +35,11 @@ const fullWeek = (minutes: number) =>
 describe('parseDuration', () => {
   it.each([
     ['7.5', 450],
-    ['7,25', 435],
+    ['7,5', 450],
+    ['7.15', 435],
+    ['7,15', 435],
+    ['7.45', 465],
+    ['7.05', 425],
     ['7:15', 435],
     ['7h15', 435],
     ['7h 15min', 435],
@@ -45,7 +49,9 @@ describe('parseDuration', () => {
     ['8', 480],
   ])('%s -> %i', (input, expected) => expect(parseDuration(input)).toBe(expected));
 
-  it.each(['', 'abc', '7:75', '7h99'])('rejects %j', (input) => expect(parseDuration(input)).toBeNull());
+  it.each(['', 'abc', '7:75', '7h99', '7.75', '7.123'])('rejects %j', (input) =>
+    expect(parseDuration(input)).toBeNull(),
+  );
 });
 
 describe('formatting', () => {

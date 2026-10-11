@@ -3,7 +3,7 @@
 Log your daily hours, see how much you are over/under your weekly target,
 and keep a running balance of extra/minus hours.
 
-- Enter each day as a **total** (`7.5`, `7:15`, `7h15`; 0–24 h) — the default — or as
+- Enter each day as a **total** (`7.15`, `7:15`, `7h15` = 7 h 15 min; `7.5` = 7 h 30 min; 0–24 h) — the default — or as
   **start–end + break**, or mark it **off** (vacation, sick, holiday → no target).
 - Full-time target defaults to **36 h 15 min/week** (7:15 per weekday).
 - **Workload periods** (Settings) scale the target from a given date, e.g. 50% or 25%.

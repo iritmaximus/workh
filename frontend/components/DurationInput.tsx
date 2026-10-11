@@ -12,7 +12,7 @@ interface Props {
 }
 
 /**
- * Free-text duration field ("7.5", "7:15", "7h15"). Valid input is committed as you type;
+ * Free-text duration field ("7.5", "7.15", "7:15", "7h15"). Valid input is committed as you type;
  * on blur the text is normalised to h:mm. Invalid text is kept and outlined until fixed.
  */
 export function DurationInput({ value, onChange, placeholder, ariaLabel, min = -Infinity, max = Infinity }: Props) {

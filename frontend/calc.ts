@@ -37,8 +37,10 @@ export function weekDays(monday: string): string[] {
 // ---------- Durations ----------
 
 /**
- * Parses "7.5", "7,5", "7:30", "7h30", "7h 30min", "45m" or "-1:30" into minutes.
- * Returns null for anything it does not understand; "" also returns null.
+ * Parses "7.5", "7,5", "7.15", "7:30", "7h30", "7h 30min", "45m" or "-1:30" into minutes.
+ * Two digits after "." or "," are minutes like after ":" ("7.15" = 7 h 15 min); one digit is
+ * a decimal hour ("7.5" = 7 h 30 min). Returns null for anything it does not understand;
+ * "" also returns null.
  */
 export function parseDuration(input: string): number | null {
   const s = input.trim().toLowerCase().replace(/\s+/g, '');
@@ -47,11 +49,11 @@ export function parseDuration(input: string): number | null {
   const body = s.replace(/^[+-]/, '');
 
   let m: RegExpMatchArray | null;
-  if ((m = body.match(/^(\d+)(?:[.,](\d+))?h?$/))) {
-    return sign * Math.round(parseFloat(`${m[1]}.${m[2] ?? '0'}`) * 60);
+  if ((m = body.match(/^(\d+)(?:[.,](\d))?h?$/))) {
+    return sign * (Number(m[1]) * 60 + Number(m[2] ?? 0) * 6);
   }
-  if ((m = body.match(/^(\d+):(\d{1,2})$/)) && Number(m[2]) < 60) {
-    return sign * (Number(m[1]) * 60 + Number(m[2]));
+  if ((m = body.match(/^(\d+)(?::(\d{1,2})|[.,](\d{2}))$/)) && Number(m[2] ?? m[3]) < 60) {
+    return sign * (Number(m[1]) * 60 + Number(m[2] ?? m[3]));
   }
   if ((m = body.match(/^(\d+)h(\d{1,2})(?:m|min)?$/)) && Number(m[2]) < 60) {
     return sign * (Number(m[1]) * 60 + Number(m[2]));
