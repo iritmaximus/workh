@@ -17,15 +17,6 @@ export function uniqueName(prefix = 'u'): string {
   return `${prefix}${process.pid.toString(36)}${(counter++).toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 }
 
-/**
- * A made-up client address. The server trusts X-Forwarded-For from loopback (like it trusts
- * Traefik in the cluster), so each test is a separate client for the per-IP rate limits.
- */
-export function randomIp(): string {
-  const b = () => Math.floor(Math.random() * 254) + 1;
-  return `10.${b()}.${b()}.${b()}`;
-}
-
 // Accounts created by the running test; deleted afterwards so the servers never reach
 // their account limit (MAX_USERS), however often the suite runs.
 const created: { creds: Creds; baseURL: string }[] = [];
@@ -45,7 +36,7 @@ export async function registerViaApi(request: APIRequestContext, creds: Creds) {
 // test's trace recording.
 async function deleteCreated() {
   for (const { creds, baseURL } of created.splice(0)) {
-    const headers = { 'Content-Type': 'application/json', 'X-Forwarded-For': randomIp() };
+    const headers = { 'Content-Type': 'application/json' };
     const login = await fetch(`${baseURL}/api/login`, { method: 'POST', headers, body: JSON.stringify(creds) });
     if (!login.ok) continue; // already deleted by the test, or never finished signing up
     const cookie = login.headers.get('set-cookie')!.split(';')[0];
@@ -73,9 +64,9 @@ export function baseData(overrides: Partial<Data> = {}): Data {
   };
 }
 
-/** New browser context = a different device/person, with its own IP and frozen clock. */
+/** New browser context = a different device/person, with its own frozen clock. */
 export async function newClient(browser: Browser, baseURL = 'http://localhost:3100') {
-  const context = await browser.newContext({ baseURL, extraHTTPHeaders: { 'X-Forwarded-For': randomIp() } });
+  const context = await browser.newContext({ baseURL });
   const page = await context.newPage();
   await page.clock.setFixedTime(NOW);
   return { context, page };
@@ -106,9 +97,6 @@ export const test = base.extend<{ user: Creds; cleanup: void }>({
     },
     { auto: true },
   ],
-  extraHTTPHeaders: async ({}, use) => {
-    await use({ 'X-Forwarded-For': randomIp() });
-  },
   page: async ({ page }, use) => {
     await page.clock.setFixedTime(NOW);
     await use(page);

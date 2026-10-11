@@ -106,18 +106,6 @@ test.describe('log in / log out', () => {
     await expect(page.getByLabel('Password')).toHaveValue('');
   });
 
-  test('ten wrong passwords lock the client out, even with the right one', async ({ page, user }) => {
-    await page.request.post('/api/logout', { data: {} });
-    for (let i = 0; i < 10; i++) {
-      await page.request.post('/api/login', { data: { username: user.username, password: 'wrong guess' } });
-    }
-    await page.goto('/');
-    await page.getByLabel('Username').fill(user.username);
-    await page.getByLabel('Password').fill(user.password);
-    await page.getByRole('button', { name: 'Log in' }).click();
-    await expect(page.getByRole('alert')).toContainText('Too many failed logins');
-  });
-
   test('logging out right after typing still saves the change', async ({ page, user }) => {
     await page.goto('/');
     await dayInput(page, MONDAY).fill('7:15');

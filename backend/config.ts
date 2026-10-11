@@ -21,8 +21,3 @@ export const DIST_DIR = path.join(ROOT, 'dist');
 export const LEGACY_DATA_FILE = path.join(ROOT, 'data.json');
 export const SESSION_TTL_MS = 30 * 86_400_000;
 export const MAX_USERS = 100;
-export const REGISTRATIONS_PER_IP_PER_HOUR = 5;
-export const LOGIN_MAX_FAILURES = 10;
-export const LOGIN_WINDOW_MS = 15 * 60_000;
-/** Trust X-Forwarded-For only from private-network peers, i.e. the ingress proxy. */
-export const TRUST_PROXY = 'loopback, linklocal, uniquelocal';

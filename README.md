@@ -32,10 +32,8 @@ and keep a running balance of extra/minus hours.
 | `SESSION_SECRET`    | random   | Signs login cookies; without it everyone is logged out on restart. `npm run -s gen-secret` |
 | `REGISTRATION_CODE` | —        | If set, sign-up requires this invite code                                                  |
 
-Everything else is fixed in `backend/config.ts`: at most 100 accounts, 5 sign-ups per
-hour per IP, 10 failed logins per 15 min per IP, 30-day sessions. Client IPs are taken
-from `X-Forwarded-For` only when the connection comes from a private network (the
-ingress proxy).
+Everything else is fixed in `backend/config.ts`: at most 100 accounts, 30-day sessions.
+The app does no rate limiting of its own; that is left to the ingress (Traefik).
 
 Session cookies are always `Secure`; browsers accept that on `http://localhost`, but
 anywhere else the app must be served over HTTPS.

@@ -3,7 +3,6 @@ import {
   createSessionToken,
   hashPassword,
   isPasswordHash,
-  RateLimiter,
   verifyPassword,
   verifySessionToken,
 } from '../../backend/auth';
@@ -56,30 +55,5 @@ describe('session tokens', () => {
 
   it('rejects garbage', () => {
     for (const t of ['', 'abc', 'a.b.c', '.', 'e30.']) expect(verifySessionToken(t, SECRET, now)).toBeNull();
-  });
-});
-
-describe('RateLimiter', () => {
-  it('blocks after too many hits and unblocks when the window passes', () => {
-    let t = 0;
-    const limiter = new RateLimiter(3, 60_000, () => t);
-    for (let i = 0; i < 3; i++) {
-      expect(limiter.retryAfter('ip')).toBe(0);
-      limiter.hit('ip');
-      t += 1000;
-    }
-    expect(limiter.retryAfter('ip')).toBe(57); // first hit at t=0 leaves the window at 60 s
-    expect(limiter.retryAfter('other-ip')).toBe(0);
-    t = 60_001;
-    expect(limiter.retryAfter('ip')).toBe(0);
-  });
-
-  it('resets', () => {
-    const limiter = new RateLimiter(2, 60_000, () => 0);
-    limiter.hit('ip');
-    limiter.hit('ip');
-    expect(limiter.retryAfter('ip')).toBeGreaterThan(0);
-    limiter.reset('ip');
-    expect(limiter.retryAfter('ip')).toBe(0);
   });
 });

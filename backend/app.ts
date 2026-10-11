@@ -1,12 +1,11 @@
 import express from 'express';
 import fs from 'node:fs';
 import { isData, type Data } from '../shared/types';
-import { createSessionToken, hashPassword, RateLimiter, verifyPassword, verifySessionToken } from './auth';
+import { createSessionToken, hashPassword, verifyPassword, verifySessionToken } from './auth';
 import * as config from './config';
 import { UserStore, type User } from './store';
 
 const COOKIE = 'workh_session';
-const HOUR_MS = 3_600_000;
 
 export const USERNAME_RULE = /^[a-z0-9][a-z0-9._-]{2,31}$/;
 export const MIN_PASSWORD = 12;
@@ -31,9 +30,6 @@ export interface AppOptions {
   sessionTtlMs: number;
   registrationCode: string;
   maxUsers: number;
-  registrationsPerIpPerHour: number;
-  loginMaxFailures: number;
-  loginWindowMs: number;
 }
 
 export function createApp(overrides: Partial<AppOptions> = {}) {
@@ -45,18 +41,12 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
     sessionTtlMs: config.SESSION_TTL_MS,
     registrationCode: config.REGISTRATION_CODE,
     maxUsers: config.MAX_USERS,
-    registrationsPerIpPerHour: config.REGISTRATIONS_PER_IP_PER_HOUR,
-    loginMaxFailures: config.LOGIN_MAX_FAILURES,
-    loginWindowMs: config.LOGIN_WINDOW_MS,
     ...overrides,
   };
   const store = new UserStore(o.dataDir);
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', config.TRUST_PROXY);
 
-  const loginLimiter = new RateLimiter(o.loginMaxFailures, o.loginWindowMs);
-  const signupLimiter = new RateLimiter(o.registrationsPerIpPerHour, HOUR_MS);
   // Logins for unknown usernames still run scrypt against this, so they take as long as real ones.
   const dummyHash = hashPassword('dummy password for timing');
 
@@ -116,16 +106,6 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
     return { username: username.trim().toLowerCase(), password };
   };
 
-  const tooMany = (res: express.Response, limiter: RateLimiter, key: string, what: string) => {
-    const wait = limiter.retryAfter(key);
-    if (wait === 0) return false;
-    res
-      .set('Retry-After', String(wait))
-      .status(429)
-      .json({ error: `Too many ${what}. Try again later.` });
-    return true;
-  };
-
   // ---------- Registration ----------
 
   app.get('/api/registration', (_req, res) => {
@@ -133,9 +113,6 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
   });
 
   app.post('/api/register', async (req, res) => {
-    const ip = req.ip ?? 'unknown';
-    if (tooMany(res, signupLimiter, ip, 'new accounts from your address')) return;
-
     const creds = credentials(req.body);
     if (!creds) {
       res.status(400).json({ error: 'username and password are required' });
@@ -153,7 +130,6 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
     }
     const { inviteCode } = (req.body ?? {}) as { inviteCode?: unknown };
     if (o.registrationCode !== '' && inviteCode !== o.registrationCode) {
-      signupLimiter.hit(ip); // guessing invite codes counts against the sign-up limit
       res.status(403).json({ error: 'Invalid invite code' });
       return;
     }
@@ -182,7 +158,6 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
       fs.renameSync(o.legacyDataFile, `${o.legacyDataFile}.migrated`);
       console.log(`WorkH: moved ${o.legacyDataFile} into the new account "${user.username}"`);
     }
-    signupLimiter.hit(ip);
     startSession(res, user);
     res.status(201).json({ username: user.username });
   });
@@ -190,9 +165,6 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
   // ---------- Sessions ----------
 
   app.post('/api/login', async (req, res) => {
-    const ip = req.ip ?? 'unknown';
-    if (tooMany(res, loginLimiter, ip, 'failed logins')) return;
-
     const creds = credentials(req.body);
     if (!creds) {
       res.status(400).json({ error: 'username and password are required' });
@@ -201,11 +173,9 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
     const user = store.findByName(creds.username);
     const ok = await verifyPassword(creds.password, user?.passwordHash ?? (await dummyHash));
     if (!user || !ok) {
-      loginLimiter.hit(ip);
       res.status(401).json({ error: 'Wrong username or password' });
       return;
     }
-    loginLimiter.reset(ip);
     startSession(res, user);
     res.json({ username: user.username });
   });
@@ -232,11 +202,8 @@ export function createApp(overrides: Partial<AppOptions> = {}) {
 
   app.delete('/api/account', requireAuth, async (req, res) => {
     const { user } = req as AuthedRequest;
-    const ip = req.ip ?? 'unknown';
-    if (tooMany(res, loginLimiter, ip, 'failed attempts')) return;
     const { password } = (req.body ?? {}) as { password?: unknown };
     if (typeof password !== 'string' || !(await verifyPassword(password, user.passwordHash))) {
-      loginLimiter.hit(ip);
       res.status(403).json({ error: 'Wrong password' });
       return;
     }

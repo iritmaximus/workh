@@ -20,8 +20,6 @@ async function start(overrides: Partial<AppOptions> = {}) {
     legacyDataFile: path.join(tmpDir, 'data.json'),
     distDir: path.join(tmpDir, 'dist'),
     sessionSecret: 's'.repeat(32),
-    loginMaxFailures: 3,
-    registrationsPerIpPerHour: 100,
     ...overrides,
   }).listen(0, '127.0.0.1');
   await new Promise((resolve) => server.once('listening', resolve));
@@ -172,15 +170,6 @@ describe('registration', () => {
     expect((await (await fetch(`${base}/api/registration`)).json()).open).toBe(false);
   });
 
-  it('limits sign-ups per IP address', async () => {
-    await restart({ registrationsPerIpPerHour: 2 });
-    await newUser('one');
-    await newUser('two');
-    const r = await register('three');
-    expect(r.status).toBe(429);
-    expect(Number(r.headers.get('retry-after'))).toBeGreaterThan(0);
-  });
-
   it('gives hours from the old single-user data.json to the first account only', async () => {
     fs.writeFileSync(path.join(tmpDir, 'data.json'), JSON.stringify(withEntry(123)));
     const first = await newUser('first');
@@ -215,23 +204,6 @@ describe('login', () => {
 
   it('rejects malformed login bodies', async () => {
     expect((await fetch(`${base}/api/login`, json('POST', { username: 'aaro' }))).status).toBe(400);
-  });
-
-  it('rate-limits repeated failures, even with the right password', async () => {
-    for (let i = 0; i < 3; i++) expect((await login('aaro', 'wrong password!')).status).toBe(401);
-    expect((await login('aaro')).status).toBe(429);
-  });
-
-  it('rate-limits per client IP from X-Forwarded-For set by a private-network proxy', async () => {
-    const asClient = (ip: string, password: string) =>
-      fetch(`${base}/api/login`, {
-        ...json('POST', { username: 'aaro', password }),
-        headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip },
-      });
-    for (let i = 0; i < 3; i++) expect((await asClient('203.0.113.1', 'wrong password!')).status).toBe(401);
-    expect((await asClient('203.0.113.1', PASSWORD)).status).toBe(429);
-    // Another client behind the same proxy is not affected.
-    expect((await asClient('203.0.113.2', PASSWORD)).status).toBe(200);
   });
 
   it('logs out by clearing the cookie', async () => {
@@ -354,12 +326,6 @@ describe('deleting an account', () => {
     const r = await deleteAccount(cookie, 'wrong password!');
     expect(r.status).toBe(403);
     expect((await getData(cookie)).status).toBe(200);
-  });
-
-  it('rate-limits password guesses', async () => {
-    const cookie = await newUser();
-    for (let i = 0; i < 3; i++) expect((await deleteAccount(cookie, 'wrong password!')).status).toBe(403);
-    expect((await deleteAccount(cookie)).status).toBe(429);
   });
 
   it('removes the account, its data and its sessions; the name becomes free', async () => {
