@@ -7,6 +7,8 @@ async function openSettings(page: Page) {
 
 test.describe('workload periods', () => {
   test('a 50% period from Wednesday halves the target from that day on', async ({ page, user }) => {
+    // Seeded: a new account's defaults follow the server's real clock, not the frozen one.
+    await seed(page.request, baseData());
     await page.goto('/');
     await openSettings(page);
     await page.getByRole('button', { name: '+ Add period' }).click(); // starts today at 50%
@@ -19,9 +21,8 @@ test.describe('workload periods', () => {
     await expect(dayRow(page, '2026-10-07').locator('.day-figures')).toContainText('/ 3:38');
     await expect(weekFooter(page)).toContainText('Target25 h 23 min'); // 14:30 + 10:52.5, rounded
     await saved(page);
-    // A new account's first period starts the Monday it was created (server clock).
     expect((await fetchData(page.request)).workloadPeriods).toEqual([
-      { from: expect.any(String), percent: 100 },
+      { from: '2026-01-01', percent: 100 },
       { from: '2026-10-07', percent: 50 },
     ]);
     void user;
@@ -88,6 +89,7 @@ test.describe('other settings', () => {
   });
 
   test('a negative opening balance carries into the balance', async ({ page, user }) => {
+    await seed(page.request, baseData()); // tracking from MONDAY, not the server's current week
     await page.goto('/');
     await openSettings(page);
     await page.getByPlaceholder('e.g. -2:30').fill('-2:30');
