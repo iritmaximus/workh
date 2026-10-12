@@ -5,7 +5,6 @@ data/
 data.json.bak
 *.tmp
 .git
-k8s
 timetrials
 Dockerfile
 .dockerignore

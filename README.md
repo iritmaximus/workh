@@ -21,7 +21,6 @@ and keep a running balance of extra/minus hours.
 | `shared/`   | Types used by both                  |
 | `tests/`    | Unit and integration tests (Vitest) |
 | `e2e/`      | End-to-end tests (Playwright)       |
-| `k8s/`      | Kubernetes manifests                |
 
 ## Configuration
 
@@ -65,10 +64,9 @@ npm run test:e2e       # builds, starts two test servers, runs Playwright
 
 `.github/workflows/ci.yml` runs lint, format, type, unit and e2e checks on every push and
 pull request. When they pass it builds the Docker image; pushes to `main` and `v*` tags
-also publish it to `ghcr.io/<owner>/<repo>` (tags: `latest`, branch, version, commit SHA).
+also publish it to `registry.pumppi.dev/workh` (tags: `latest`, branch, version, commit SHA).
 
-GitHub packages are private by default: make the package public, or give the cluster an
-image pull secret for ghcr.io.
+Pushing needs the registry login in the `REGISTRY_USER` and `REGISTRY_PASSWORD` repository secrets.
 
 ## Docker
 
@@ -80,17 +78,17 @@ docker run -p 3001:3001 --env-file .env.docker -v workh-data:/app/data workh   #
 
 ## Kubernetes
 
-Manifests are in `k8s/`: Deployment (1 replica, PVC-backed), Service, and a Traefik
-Ingress at `workh.pumppi.dev` with the shared fail2ban middleware.
+Manifests are in `workh/` of the [k8s-pumppi](../k8s-pumppi) repo: Deployment (1 replica,
+PVC-backed), Service, and a Traefik Ingress at `workh.pumppi.dev` with the shared fail2ban
+middleware. Argo CD deploys them, and argocd-image-updater rolls out new `:latest` pushes.
 
-1. Set `image:` in `k8s/deployment.yaml` to the image CI published.
-2. Create the sealed secret (session secret, plus an optional invite code):
+1. Create the sealed secret (session secret, plus an optional invite code):
    ```sh
    npm run -s gen-secret > .env.secret
    echo "REGISTRATION_CODE=<invite code>" >> .env.secret   # optional
    kubectl create secret generic workh-secrets -n default \
        --from-env-file=.env.secret --dry-run=client -o yaml \
-     | kubeseal --format yaml > k8s/sealed-secret.yaml
+     | kubeseal --format yaml > ../k8s-pumppi/workh/sealed-secret.yaml
    rm .env.secret
    ```
-3. Apply: `kubectl apply -f k8s/`
+2. Commit and push k8s-pumppi; Argo CD applies it.
