@@ -78,7 +78,7 @@ docker run -p 3001:3001 --env-file .env.docker -v workh-data:/app/data workh   #
 
 ## Kubernetes
 
-Manifests are in `workh/` of the [k8s-pumppi](../k8s-pumppi) repo: Deployment (1 replica,
+Manifests are in `workh/` of the [k8s-pumppi](https://github.com/iritmaximus/k8s-pumppi/tree/main/workh) repo: Deployment (1 replica,
 PVC-backed), Service, and a Traefik Ingress at `workh.pumppi.dev` with the shared fail2ban
 middleware. Argo CD deploys them, and argocd-image-updater rolls out new `:latest` pushes.
 
