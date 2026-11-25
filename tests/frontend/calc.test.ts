@@ -8,6 +8,7 @@ import {
   isoWeekNumber,
   mondayOf,
   parseDuration,
+  plannedVacationDays,
   rangeMinutes,
   weekSummary,
 } from '../../frontend/calc';
@@ -138,6 +139,34 @@ describe('weekSummary and history', () => {
   });
 
   it('is empty when tracking starts in the future', () => {
-    expect(history(data(), '2026-10-01')).toEqual({ rows: [], balance: 0 });
+    expect(history(data(), '2026-10-01')).toEqual({ rows: [], balance: 0, vacationDays: 0 });
+  });
+});
+
+describe('vacation days', () => {
+  const vacation = { mode: 'vacation' as const };
+
+  it('gives vacation days a zero target and counts them per week', () => {
+    const d = data({ entries: { [MON]: vacation, '2026-10-06': vacation, '2026-10-07': { mode: 'off' } } });
+    expect(dayTarget(MON, d)).toBe(0);
+    expect(weekSummary(MON, d)).toMatchObject({ target: 2175 - 3 * 435, vacationDays: 2 });
+  });
+
+  it('totals used vacation days up to today and counts later ones as planned', () => {
+    const d = data({
+      settings: { ...data().settings, trackingStart: '2026-10-06' },
+      entries: {
+        [MON]: vacation, // before the tracking start: not counted
+        '2026-10-06': vacation,
+        '2026-10-13': vacation,
+        '2026-10-14': vacation, // today
+        '2026-10-15': vacation, // planned
+        '2026-10-20': vacation, // planned
+      },
+    });
+    const { rows, vacationDays } = history(d, '2026-10-14');
+    expect(rows.map((r) => r.vacationDays)).toEqual([1, 2]);
+    expect(vacationDays).toBe(3);
+    expect(plannedVacationDays(d, '2026-10-14')).toBe(2);
   });
 });

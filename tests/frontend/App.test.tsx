@@ -144,6 +144,20 @@ describe('tracking hours', () => {
     await user.click(within(wed).getByRole('button', { name: 'Off' }));
     expect(within(weekFooter()).getByText('29 h 00 min')).toBeInTheDocument();
   });
+
+  it('counts vacation days in the week, the history and the total', async () => {
+    const { state } = installFakeApi({ data: data(), loggedIn: true });
+    const user = userEvent.setup();
+    render(<App />);
+    for (const date of ['2026-10-05', '2026-10-06']) {
+      const group = await screen.findByRole('group', { name: `Input mode for ${date}` });
+      await user.click(within(group).getByRole('button', { name: 'Vacation' }));
+    }
+    expect(within(weekFooter()).getByText('21 h 45 min')).toBeInTheDocument();
+    expect(within(weekFooter()).getByText('2 days')).toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Vacation days' })).getByText('2 days')).toBeInTheDocument();
+    await waitFor(() => expect(state.data.entries['2026-10-05']).toEqual({ mode: 'vacation', note: '' }));
+  });
 });
 
 describe('expired session', () => {

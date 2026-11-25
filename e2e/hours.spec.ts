@@ -156,11 +156,25 @@ test.describe('off days', () => {
     await page.goto('/');
     const row = dayRow(page, WED);
     await row.getByRole('button', { name: 'Off' }).click();
-    await row.getByPlaceholder('Vacation, sick, holiday…').fill('Vacation');
+    await row.getByPlaceholder('Sick, holiday…').fill('Sick');
     await expect(weekFooter(page)).toContainText('Target29 h 00 min');
     await saved(page);
     await page.reload();
-    await expect(dayRow(page, WED).getByPlaceholder('Vacation, sick, holiday…')).toHaveValue('Vacation');
+    await expect(dayRow(page, WED).getByPlaceholder('Sick, holiday…')).toHaveValue('Sick');
+    void user;
+  });
+
+  test('a vacation day drops out of the target and is counted', async ({ page, user }) => {
+    await seed(page.request, baseData());
+    await page.goto('/');
+    await dayRow(page, WED).getByRole('button', { name: 'Vacation' }).click();
+    await expect(weekFooter(page)).toContainText('Target29 h 00 min');
+    await expect(weekFooter(page)).toContainText('Vacation1 day');
+    await expect(page.getByRole('region', { name: 'Vacation days' })).toContainText('1 day');
+    await saved(page);
+    await page.reload();
+    await expect(dayRow(page, WED).getByRole('button', { name: 'Vacation' })).toHaveClass('active');
+    await expect(page.locator('table tbody tr').first().locator('td').nth(5)).toHaveText('1');
     void user;
   });
 });

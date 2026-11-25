@@ -15,6 +15,7 @@ const MODES: { mode: Entry['mode']; label: string }[] = [
   { mode: 'total', label: 'Total' },
   { mode: 'range', label: 'Start–End' },
   { mode: 'off', label: 'Off' },
+  { mode: 'vacation', label: 'Vacation' },
 ];
 
 function emptyEntry(mode: Entry['mode']): Entry | undefined {
@@ -25,6 +26,8 @@ function emptyEntry(mode: Entry['mode']): Entry | undefined {
       return { mode: 'range', start: '', end: '', breakMin: 30 };
     case 'off':
       return { mode: 'off', note: '' };
+    case 'vacation':
+      return { mode: 'vacation', note: '' };
   }
 }
 
@@ -38,7 +41,9 @@ export function DayRow({ date, entry, worked, target, isToday, onChange }: Props
   });
 
   return (
-    <div className={`day${isToday ? ' today' : ''}${target === 0 && mode !== 'off' ? ' weekend' : ''}`}>
+    <div
+      className={`day${isToday ? ' today' : ''}${target === 0 && mode !== 'off' && mode !== 'vacation' ? ' weekend' : ''}${mode === 'vacation' ? ' vacation' : ''}`}
+    >
       <div className="day-name">{dayName}</div>
 
       <div className="mode-toggle" role="group" aria-label={`Input mode for ${date}`}>
@@ -100,9 +105,19 @@ export function DayRow({ date, entry, worked, target, isToday, onChange }: Props
           <input
             type="text"
             className="note"
-            placeholder="Vacation, sick, holiday…"
+            placeholder="Sick, holiday…"
             value={entry.note ?? ''}
             onChange={(e) => onChange({ mode: 'off', note: e.target.value })}
+          />
+        )}
+        {entry?.mode === 'vacation' && (
+          <input
+            type="text"
+            className="note"
+            placeholder="Note (optional)"
+            aria-label={`Vacation note for ${date}`}
+            value={entry.note ?? ''}
+            onChange={(e) => onChange({ mode: 'vacation', note: e.target.value })}
           />
         )}
       </div>

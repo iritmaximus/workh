@@ -21,7 +21,8 @@ export interface WorkloadPeriod {
 export type Entry =
   | { mode: 'total'; minutes: number }
   | { mode: 'range'; start: string; end: string; breakMin: number }
-  | { mode: 'off'; note?: string };
+  | { mode: 'off'; note?: string }
+  | { mode: 'vacation'; note?: string };
 
 export interface Data {
   settings: Settings;
@@ -66,6 +67,7 @@ function isEntry(v: unknown): v is Entry {
         isNum(v.breakMin)
       );
     case 'off':
+    case 'vacation':
       return v.note === undefined || typeof v.note === 'string';
     default:
       return false;

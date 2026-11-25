@@ -31,7 +31,7 @@ test.describe('content', () => {
     const payload = '<img src=x onerror="window.xssRan=1">';
     await seed(page.request, baseData({ entries: { [MONDAY]: { mode: 'off', note: payload } } }));
     await page.goto('/');
-    await expect(dayRow(page, MONDAY).getByPlaceholder('Vacation, sick, holiday…')).toHaveValue(payload);
+    await expect(dayRow(page, MONDAY).getByPlaceholder('Sick, holiday…')).toHaveValue(payload);
     expect(await page.evaluate(() => (window as unknown as { xssRan?: number }).xssRan)).toBeUndefined();
     void user;
   });

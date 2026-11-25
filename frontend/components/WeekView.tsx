@@ -1,5 +1,5 @@
 import type { Data, Entry } from '../../shared/types';
-import { addDays, formatDuration, isoWeekNumber, mondayOf, weekSummary } from '../calc';
+import { addDays, formatDays, formatDuration, isoWeekNumber, mondayOf, weekSummary } from '../calc';
 import { DayRow } from './DayRow';
 
 interface Props {
@@ -64,6 +64,10 @@ export function WeekView({ data, monday, today, onNavigate, onEntryChange }: Pro
         <div>
           <span className="muted">Target</span>
           <strong>{formatDuration(week.target)}</strong>
+        </div>
+        <div>
+          <span className="muted">Vacation</span>
+          <strong>{formatDays(week.vacationDays)}</strong>
         </div>
         <div className={Math.round(week.diff) > 0 ? 'pos' : Math.round(week.diff) < 0 ? 'neg' : ''}>
           <span className="muted">This week</span>

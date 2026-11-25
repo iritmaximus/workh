@@ -259,7 +259,17 @@ input.break {
   color: var(--neg);
 }
 
-/* Balance */
+/* Balance and vacation */
+.side {
+  display: flex;
+  flex-direction: column;
+}
+.vacation-value {
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .balance {
   display: flex;
   flex-direction: column;

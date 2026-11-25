@@ -80,6 +80,11 @@ export function formatDuration(minutes: number, signed = false): string {
   return `${r > 0 ? '+' : '−'}${text}`;
 }
 
+/** 1 -> "1 day", 3 -> "3 days". */
+export function formatDays(days: number): string {
+  return `${days} ${days === 1 ? 'day' : 'days'}`;
+}
+
 const clockMinutes = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number);
   return h * 60 + m;
@@ -103,6 +108,7 @@ export function dayWorked(entry: Entry | undefined): number {
     case 'range':
       return rangeMinutes(entry.start, entry.end, entry.breakMin);
     case 'off':
+    case 'vacation':
       return 0;
   }
 }
@@ -119,7 +125,8 @@ export function percentOn(date: string, periods: WorkloadPeriod[]): number {
 export function dayTarget(date: string, data: Data): number {
   const { workdays, fullTimeWeekMinutes } = data.settings;
   if (!workdays.includes(isoWeekday(date))) return 0;
-  if (data.entries[date]?.mode === 'off') return 0;
+  const mode = data.entries[date]?.mode;
+  if (mode === 'off' || mode === 'vacation') return 0;
   return (fullTimeWeekMinutes / workdays.length) * (percentOn(date, data.workloadPeriods) / 100);
 }
 
@@ -127,6 +134,7 @@ export interface DaySummary {
   date: string;
   worked: number;
   target: number;
+  vacation: boolean;
 }
 
 export interface WeekSummary {
@@ -135,23 +143,29 @@ export interface WeekSummary {
   worked: number;
   target: number;
   diff: number;
+  /** Number of days marked as vacation. */
+  vacationDays: number;
 }
+
+const daySummary = (date: string, data: Data): DaySummary => ({
+  date,
+  worked: dayWorked(data.entries[date]),
+  target: dayTarget(date, data),
+  vacation: data.entries[date]?.mode === 'vacation',
+});
 
 function summarize(monday: string, days: DaySummary[]): WeekSummary {
   const worked = days.reduce((a, d) => a + d.worked, 0);
   const target = days.reduce((a, d) => a + d.target, 0);
-  return { monday, days, worked, target, diff: worked - target };
+  const vacationDays = days.filter((d) => d.vacation).length;
+  return { monday, days, worked, target, diff: worked - target, vacationDays };
 }
 
 /** Full Monday–Sunday summary, regardless of tracking start or today. */
 export function weekSummary(monday: string, data: Data): WeekSummary {
   return summarize(
     monday,
-    weekDays(monday).map((date) => ({
-      date,
-      worked: dayWorked(data.entries[date]),
-      target: dayTarget(date, data),
-    })),
+    weekDays(monday).map((date) => daySummary(date, data)),
   );
 }
 
@@ -160,23 +174,39 @@ export interface HistoryRow extends WeekSummary {
   balance: number;
 }
 
+export interface History {
+  rows: HistoryRow[];
+  /** Running balance at the end of today. */
+  balance: number;
+  /** Vacation days used from the tracking start up to and including today. */
+  vacationDays: number;
+}
+
 /**
  * Week-by-week totals from the tracking start up to and including `today`.
  * Days after today are left out, so an unfinished week never shows as missing hours.
  */
-export function history(data: Data, today: string): { rows: HistoryRow[]; balance: number } {
+export function history(data: Data, today: string): History {
   const start = data.settings.trackingStart;
   let balance = data.settings.openingBalanceMinutes;
+  let vacationDays = 0;
   const rows: HistoryRow[] = [];
-  if (start > today) return { rows, balance };
+  if (start > today) return { rows, balance, vacationDays };
 
   for (let monday = mondayOf(start); monday <= today; monday = addDays(monday, 7)) {
     const days = weekDays(monday)
       .filter((date) => date >= start && date <= today)
-      .map((date) => ({ date, worked: dayWorked(data.entries[date]), target: dayTarget(date, data) }));
+      .map((date) => daySummary(date, data));
     const week = summarize(monday, days);
     balance += week.diff;
+    vacationDays += week.vacationDays;
     rows.push({ ...week, balance });
   }
-  return { rows, balance };
+  return { rows, balance, vacationDays };
+}
+
+/** Vacation days entered after `today` (from the tracking start on). */
+export function plannedVacationDays(data: Data, today: string): number {
+  const from = data.settings.trackingStart > today ? data.settings.trackingStart : addDays(today, 1);
+  return Object.entries(data.entries).filter(([date, e]) => e.mode === 'vacation' && date >= from).length;
 }

@@ -31,6 +31,7 @@ export function HistoryTable({ rows, selected, onSelect }: Props) {
               <th className="num">Worked</th>
               <th className="num">Target</th>
               <th className="num">Difference</th>
+              <th className="num">Vacation</th>
               <th className="num">Balance</th>
             </tr>
           </thead>
@@ -47,6 +48,7 @@ export function HistoryTable({ rows, selected, onSelect }: Props) {
                 <td className="num">{formatDuration(r.worked)}</td>
                 <td className="num">{formatDuration(r.target)}</td>
                 <td className={`num ${tone(r.diff)}`}>{formatDuration(r.diff, true)}</td>
+                <td className="num">{r.vacationDays || ''}</td>
                 <td className={`num ${tone(r.balance)}`}>{formatDuration(r.balance, true)}</td>
               </tr>
             ))}

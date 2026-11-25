@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Data, Entry } from '../shared/types';
 import { api, UnauthorizedError, type Versioned } from './api';
-import { history, mondayOf, todayISO } from './calc';
+import { history, mondayOf, plannedVacationDays, todayISO } from './calc';
 import { mergeData } from './merge';
 import { Account } from './components/Account';
 import { AuthScreen } from './components/AuthScreen';
 import { BalanceCard } from './components/BalanceCard';
 import { HistoryTable } from './components/HistoryTable';
 import { Settings } from './components/Settings';
+import { VacationCard } from './components/VacationCard';
 import { WeekView } from './components/WeekView';
 
 type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
@@ -210,7 +211,7 @@ function Tracker({ username, recovered, onUnauthorized, onLogout, onDeleted }: T
   }
   if (!data) return <main className="muted">Loading…</main>;
 
-  const { rows, balance } = history(data, today);
+  const { rows, balance, vacationDays } = history(data, today);
 
   return (
     <main>
@@ -246,7 +247,10 @@ function Tracker({ username, recovered, onUnauthorized, onLogout, onDeleted }: T
 
       <div className="top">
         <WeekView data={data} monday={monday} today={today} onNavigate={setMonday} onEntryChange={setEntry} />
-        <BalanceCard balance={balance} trackingStart={data.settings.trackingStart} today={today} />
+        <div className="side">
+          <BalanceCard balance={balance} trackingStart={data.settings.trackingStart} today={today} />
+          <VacationCard used={vacationDays} planned={plannedVacationDays(data, today)} />
+        </div>
       </div>
 
       <HistoryTable rows={rows} selected={monday} onSelect={setMonday} />
