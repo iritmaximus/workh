@@ -211,7 +211,7 @@ function Tracker({ username, recovered, onUnauthorized, onLogout, onDeleted }: T
   }
   if (!data) return <main className="muted">Loading…</main>;
 
-  const { rows, balance, vacationDays } = history(data, today);
+  const { rows, balance, vacationDays, vacationDaysBefore } = history(data, today);
 
   return (
     <main>
@@ -249,11 +249,25 @@ function Tracker({ username, recovered, onUnauthorized, onLogout, onDeleted }: T
         <WeekView data={data} monday={monday} today={today} onNavigate={setMonday} onEntryChange={setEntry} />
         <div className="side">
           <BalanceCard balance={balance} trackingStart={data.settings.trackingStart} today={today} />
-          <VacationCard used={vacationDays} planned={plannedVacationDays(data, today)} />
+          <VacationCard
+            used={vacationDays}
+            before={vacationDaysBefore}
+            trackingStart={data.settings.trackingStart}
+            planned={plannedVacationDays(data, today)}
+          />
         </div>
       </div>
 
-      <HistoryTable rows={rows} selected={monday} onSelect={setMonday} />
+      <HistoryTable
+        rows={rows}
+        before={{
+          trackingStart: data.settings.trackingStart,
+          openingBalance: data.settings.openingBalanceMinutes,
+          vacationDays: vacationDaysBefore,
+        }}
+        selected={monday}
+        onSelect={setMonday}
+      />
       <Settings data={data} today={today} onChange={update} />
       <Account
         username={username}

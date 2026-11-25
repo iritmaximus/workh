@@ -180,6 +180,8 @@ export interface History {
   balance: number;
   /** Vacation days used from the tracking start up to and including today. */
   vacationDays: number;
+  /** Vacation days entered before the tracking start (outside the tracked weeks). */
+  vacationDaysBefore: number;
 }
 
 /**
@@ -191,7 +193,10 @@ export function history(data: Data, today: string): History {
   let balance = data.settings.openingBalanceMinutes;
   let vacationDays = 0;
   const rows: HistoryRow[] = [];
-  if (start > today) return { rows, balance, vacationDays };
+  const vacationDaysBefore = Object.entries(data.entries).filter(
+    ([date, e]) => e.mode === 'vacation' && date < start,
+  ).length;
+  if (start > today) return { rows, balance, vacationDays, vacationDaysBefore };
 
   for (let monday = mondayOf(start); monday <= today; monday = addDays(monday, 7)) {
     const days = weekDays(monday)
@@ -202,7 +207,7 @@ export function history(data: Data, today: string): History {
     vacationDays += week.vacationDays;
     rows.push({ ...week, balance });
   }
-  return { rows, balance, vacationDays };
+  return { rows, balance, vacationDays, vacationDaysBefore };
 }
 
 /** Vacation days entered after `today` (from the tracking start on). */

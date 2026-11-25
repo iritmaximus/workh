@@ -158,6 +158,22 @@ describe('tracking hours', () => {
     expect(within(screen.getByRole('region', { name: 'Vacation days' })).getByText('2 days')).toBeInTheDocument();
     await waitFor(() => expect(state.data.entries['2026-10-05']).toEqual({ mode: 'vacation', note: '' }));
   });
+
+  it('sums vacation from before the tracking start into one history row and the total', async () => {
+    const d = data();
+    d.settings.openingBalanceMinutes = 90;
+    d.entries['2026-09-28'] = { mode: 'vacation' };
+    d.entries['2026-09-29'] = { mode: 'vacation' };
+    d.entries['2026-10-07'] = { mode: 'vacation' };
+    installFakeApi({ data: d, loggedIn: true });
+    render(<App />);
+    const card = await screen.findByRole('region', { name: 'Vacation days' });
+    expect(within(card).getByText('3 days')).toBeInTheDocument();
+    expect(within(card).getByText('1 day since 2026-10-05 + 2 days before')).toBeInTheDocument();
+    const row = screen.getByRole('row', { name: /Before 2026-10-05/ });
+    expect(row).toHaveTextContent('2');
+    expect(row).toHaveTextContent('+1 h 30 min');
+  });
 });
 
 describe('expired session', () => {

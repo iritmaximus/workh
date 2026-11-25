@@ -3,13 +3,15 @@ import { formatDuration, isoWeekNumber } from '../calc';
 
 interface Props {
   rows: HistoryRow[];
+  /** Everything before the tracking start, summed into one row: carried balance and vacation days. */
+  before: { trackingStart: string; openingBalance: number; vacationDays: number };
   selected: string;
   onSelect: (monday: string) => void;
 }
 
 const tone = (m: number) => (Math.round(m) > 0 ? 'pos' : Math.round(m) < 0 ? 'neg' : '');
 
-export function HistoryTable({ rows, selected, onSelect }: Props) {
+export function HistoryTable({ rows, before, selected, onSelect }: Props) {
   if (rows.length === 0) {
     return (
       <section className="card">
@@ -52,6 +54,16 @@ export function HistoryTable({ rows, selected, onSelect }: Props) {
                 <td className={`num ${tone(r.balance)}`}>{formatDuration(r.balance, true)}</td>
               </tr>
             ))}
+            {(before.vacationDays > 0 || Math.round(before.openingBalance) !== 0) && (
+              <tr className="before-start" title="Totals from before the tracking start">
+                <td colSpan={2}>Before {before.trackingStart}</td>
+                <td className="num" />
+                <td className="num" />
+                <td className="num" />
+                <td className="num">{before.vacationDays || ''}</td>
+                <td className={`num ${tone(before.openingBalance)}`}>{formatDuration(before.openingBalance, true)}</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

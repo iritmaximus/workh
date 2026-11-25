@@ -139,7 +139,7 @@ describe('weekSummary and history', () => {
   });
 
   it('is empty when tracking starts in the future', () => {
-    expect(history(data(), '2026-10-01')).toEqual({ rows: [], balance: 0, vacationDays: 0 });
+    expect(history(data(), '2026-10-01')).toEqual({ rows: [], balance: 0, vacationDays: 0, vacationDaysBefore: 0 });
   });
 });
 
@@ -156,7 +156,7 @@ describe('vacation days', () => {
     const d = data({
       settings: { ...data().settings, trackingStart: '2026-10-06' },
       entries: {
-        [MON]: vacation, // before the tracking start: not counted
+        [MON]: vacation, // before the tracking start: counted separately
         '2026-10-06': vacation,
         '2026-10-13': vacation,
         '2026-10-14': vacation, // today
@@ -164,9 +164,10 @@ describe('vacation days', () => {
         '2026-10-20': vacation, // planned
       },
     });
-    const { rows, vacationDays } = history(d, '2026-10-14');
+    const { rows, vacationDays, vacationDaysBefore } = history(d, '2026-10-14');
     expect(rows.map((r) => r.vacationDays)).toEqual([1, 2]);
     expect(vacationDays).toBe(3);
+    expect(vacationDaysBefore).toBe(1);
     expect(plannedVacationDays(d, '2026-10-14')).toBe(2);
   });
 });
